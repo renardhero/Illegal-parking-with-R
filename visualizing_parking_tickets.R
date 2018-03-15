@@ -14,6 +14,8 @@ str(pysakointivirheet)
 summary(pysakointivirheet)
 summary(pysakointivirheet$Postinumero)
 glimpse(pysakointivirheet)
+head <-head(pysakointivirheet)
+write.csv(head,"head_pysakointivirheet.csv")
 min(pysakointivirheet$Virheen.tekovuosi)
 max(pysakointivirheet$Virheen.tekovuosi)
 
@@ -27,7 +29,7 @@ p <- pysakointivirheet %>%
 
 #let's delete the identified NA row 
 p <- p[-89,]
-barplot(p$Postinumero,p$count)
+#barplot(p$Postinumero,p$count)
 #as.character(p$Postinumero)
 #p2 <- data.frame(as.character(p$Postinumero),p$count)
 #Let's create another variable that that has the percentages of parking tickets  
@@ -121,7 +123,7 @@ t1 <- pysakointivirheet %>%
 
 
 t2 <- pysakointivirheet %>%
-  group_by(Virheen.tekokuukausi) %>%
+  group_by(Virheen.tekokuukausi,Virheen.tekovuosi) %>%
   summarise(count = n())
 
 t2 <- t2[order(t2$count),]
@@ -133,9 +135,9 @@ plot(t2)
 summary(t1)
 summary(t2)
 
-barplot(t3$count, legend=t3$Virheen.tekokuukausi)
+barplot(t2$count, legend=t2$Virheen.tekokuukausi)
 
-p<-ggplot(data=t3, aes(x=t3$Virheen.tekokuukausi, y=t3$count)) +
+p<-ggplot(data=t2, aes(x=t2$Virheen.tekokuukausi, y=t2$count)) +
   geom_bar(stat="identity")+
   scale_fill_brewer(palette="Blues")
   #scale_x_discrete(limits=c("Elokuu", "Heinäkuu", "Helmikuu"))
@@ -160,7 +162,7 @@ t4 <- t4 %>%
 
 
 
-
+#Making a map of Helsinki with scatter dots of parking tickets 
 np_dist <- readShapeSpatial("PKS_postinumeroalueet_2017_shp.shp")
 helsinki_postal_codes <- c("00100","00120","00130","00140","00150","00160","00170",
                            "00180","00200","00210","00220","00230","00240","00250",
@@ -187,8 +189,10 @@ ggplot() + geom_polygon(data = np_dist, aes(x=long, y = lat, fill = "posno", gro
   geom_point(data = sakot_helsinki, aes(x = x, y = y), color = "red", size = 0.1) + 
   guides(fill=TRUE) + 
   ggtitle("Parking tickets in Helsinki 2014-2017")
+
 #Zooming in this image you can actually start to see the streets of Helsinki :)
 
+#Moving to create visualizations solely about the postal code area 00100
 np_dist <- readShapeSpatial("PKS_postinumeroalueet_2017_shp.shp")
 postal_code <- "00100"
 np_dist <- np_dist[np_dist$Posno %in% postal_code,]
@@ -217,7 +221,14 @@ ggplot() + geom_polygon(data = np_dist, aes(x=long, y = lat, group = group),colo
   scale_alpha(range = c(0, 0.7), guide = FALSE) +
   ggtitle("Parking tickets in 00100 2014-2017")
 
-
+#Which streets are the most common
+kadut <- sakot_postinumero %>%
+  group_by(Osoite) %>%
+  summarise(count = n()) %>%
+  
+kadut <- kadut[order(kadut$count, decreasing=TRUE), ]
+head(kadut,10)
+write.csv(kadut,"parkkisakot_kadut.csv")
 
 
 #Now let's try to make a satellite image picture
@@ -227,5 +238,8 @@ sbbox
 coords <- c(mean(sakot_postinumero$x_new),mean(sakot_postinumero$y_new))
 coords
 coords2 <- c(24.93837910000002,60.16985569999999)
-sq_map <- get_map(location = coords2, maptype = "satellite", source = "google",zoom=13)
+sq_map <- get_map(location = coords2, maptype = "roadmap", source = "google",zoom=14)
 ggmap(sq_map)
+
+setwd("~/Information visualization/Pyoramaarat/Helsinki_liikennevaylat_avoin_data/Shape")
+katukartta <- readShapeSpatial("~/Information visualization/Pyoramaarat/Helsinki_liikennevaylat_avoin_data/Shape/Hki_liikennevaylat.shp")
